@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1C110A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Oração Diária">
+  <link rel="manifest" href="manifest.json">
+  <title>Oração Diária</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500&display=swap');
+
+    :root {
+      --ink:     #1C110A;
+      --ink2:    #4A3728;
+      --ink3:    #8A7060;
+      --gold:    #9A7B4F;
+      --gold-lt: #C9A96E;
+      --bg:      #F7F2EA;
+      --bg2:     #EFE8DA;
+      --bg3:     #E4D9C8;
+      --danger:  #6B3A2A;
+      --rad:     12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100dvh; display: flex; flex-direction: column; }
+
+    header { background: var(--ink); padding: 24px 20px 20px; text-align: center; }
+    header .cruz { font-size: 26px; color: var(--gold-lt); display: block; margin-bottom: 6px; }
+    header h1 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--bg); letter-spacing: .02em; }
+    header .data { font-size: 12px; color: var(--ink3); margin-top: 4px; letter-spacing: .06em; text-transform: uppercase; }
+    header .liturgia-nome { font-size: 13px; color: var(--gold-lt); font-style: italic; margin-top: 3px; font-family: 'Cormorant Garamond', serif; }
+
+    nav { background: var(--ink); display: flex; border-top: 1px solid rgba(201,169,110,.2); position: sticky; top: 0; z-index: 100; }
+    nav button { flex: 1; background: none; border: none; border-bottom: 2px solid transparent; color: var(--ink3); font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; padding: 13px 8px; cursor: pointer; transition: color .2s, border-color .2s; }
+    nav button.active { color: var(--gold-lt); border-bottom-color: var(--gold-lt); }
+
+    .page { display: none; flex: 1; flex-direction: column; }
+    .page.active { display: flex; }
+
+    #pg-leituras { padding: 16px 16px 80px; gap: 14px; overflow-y: auto; }
+
+    .card { background: #fff; border-radius: var(--rad); border: 1px solid var(--bg3); overflow: hidden; }
+    .card-head { background: var(--bg2); padding: 11px 16px; border-bottom: 1px solid var(--bg3); }
+    .eyebrow { font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+    .leitura-ref { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-style: italic; color: var(--ink2); margin-top: 2px; }
+    .card-body { padding: 16px; font-family: 'Cormorant Garamond', serif; font-size: 17px; line-height: 1.8; color: var(--ink); }
+    .card-body p { margin-bottom: 10px; }
+    .card-body p:last-child { margin-bottom: 0; }
+    .evangelho-destaque { background: var(--bg2); border-left: 3px solid var(--gold); border-radius: 0 8px 8px 0; padding: 12px 14px; margin-bottom: 12px; font-style: italic; }
+    .salmo-refrao { display: inline-block; background: var(--bg3); border-radius: 6px; padding: 3px 10px; font-size: 13px; font-family: 'Inter', sans-serif; font-weight: 500; color: var(--gold); margin-bottom: 10px; }
+    .cor-liturgica { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .cor-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .link-externo { text-align: center; padding: 4px 0 2px; }
+    .link-externo a { color: var(--gold); font-family: 'Cormorant Garamond', serif; font-size: 15px; font-style: italic; text-decoration: none; }
+
+    #pg-oracoes { overflow-y: auto; }
+    .sync-bar { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--bg2); border-bottom: 1px solid var(--bg3); font-size: 12px; color: var(--ink3); flex-shrink: 0; }
+    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink3); flex-shrink: 0; }
+    .sync-dot.ok { background: #5a9e6a; }
+    .sync-dot.err { background: var(--danger); }
+    #oracoes-lista { padding: 16px 16px 100px; display: flex; flex-direction: column; gap: 10px; }
+
+    .oracao-card { background: #fff; border-radius: var(--rad); border: 1px solid var(--bg3); overflow: hidden; }
+    .oracao-topo { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .oracao-topo:active { background: var(--bg2); }
+    .oracao-icone { width: 38px; height: 38px; background: var(--bg2); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .oracao-nome { flex: 1; font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--ink); }
+    .chevron { color: var(--ink3); font-size: 16px; transition: transform .25s; flex-shrink: 0; }
+    .oracao-card.aberta .chevron { transform: rotate(180deg); }
+    .oracao-corpo { display: none; border-top: 1px solid var(--bg3); padding: 0 16px 16px; }
+    .oracao-card.aberta .oracao-corpo { display: block; }
+    .oracao-texto { font-family: 'Cormorant Garamond', serif; font-size: 17px; line-height: 1.85; color: var(--ink); white-space: pre-wrap; padding-top: 14px; }
+    .oracao-acoes { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-sm { background: var(--bg2); border: 1px solid var(--bg3); border-radius: 8px; padding: 7px 14px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--ink2); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-sm:active { background: var(--bg3); }
+    .btn-sm.perigo { color: var(--danger); }
+
+    .vazio { text-align: center; padding: 56px 24px; color: var(--ink3); }
+    .vazio .icone { font-size: 42px; margin-bottom: 14px; }
+    .vazio p { font-family: 'Cormorant Garamond', serif; font-size: 18px; line-height: 1.6; }
+
+    .fab { position: fixed; bottom: 24px; right: 20px; background: var(--ink); color: var(--gold-lt); border: 1px solid var(--gold); border-radius: 50px; padding: 13px 22px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.28); display: none; align-items: center; gap: 8px; z-index: 50; -webkit-tap-highlight-color: transparent; }
+    .fab:active { opacity: .85; }
+    .fab.visivel { display: flex; }
+
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(28,17,10,.72); z-index: 200; align-items: flex-end; justify-content: center; }
+    .overlay.aberta { display: flex; }
+    .modal { background: var(--bg); border-radius: 20px 20px 0 0; width: 100%; max-width: 600px; padding: 24px 20px 44px; animation: subir .25s ease; }
+    @keyframes subir { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin-bottom: 20px; }
+    .campo { margin-bottom: 16px; }
+    .campo label { display: block; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+    .campo input, .campo textarea { width: 100%; background: #fff; border: 1px solid var(--bg3); border-radius: var(--rad); padding: 12px 14px; font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--ink); outline: none; resize: vertical; -webkit-appearance: none; }
+    .campo input:focus, .campo textarea:focus { border-color: var(--gold); }
+    .campo textarea { min-height: 140px; }
+    .emojis { display: flex; flex-wrap: wrap; gap: 8px; }
+    .emoji-op { width: 44px; height: 44px; border: 2px solid var(--bg3); border-radius: 10px; background: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .emoji-op.sel { border-color: var(--gold); background: var(--bg2); }
+    .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-cancelar { flex: 1; padding: 14px; background: var(--bg2); border: 1px solid var(--bg3); border-radius: var(--rad); font-family: 'Inter', sans-serif; font-size: 15px; color: var(--ink2); cursor: pointer; }
+    .btn-salvar { flex: 2; padding: 14px; background: var(--ink); border: none; border-radius: var(--rad); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--gold-lt); cursor: pointer; }
+    .btn-salvar:active { opacity: .85; }
+
+    .loading-msg { padding: 20px 16px; font-family: 'Cormorant Garamond', serif; font-size: 17px; color: var(--ink3); font-style: italic; text-align: center; }
+
+    .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(16px); background: var(--ink); color: var(--bg); padding: 9px 20px; border-radius: 50px; font-size: 14px; opacity: 0; transition: all .3s; pointer-events: none; z-index: 300; white-space: nowrap; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #1C150F; --bg2: #261D14; --bg3: #3A2D20; --ink: #EDE6DA; --ink2: #C9BBA8; --ink3: #7A6E60; }
+      .card, .oracao-card { background: #221A10; }
+      .campo input, .campo textarea, .emoji-op { background: #221A10; }
+      .modal { background: #1C150F; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="cruz">✝</span>
+  <h1>Oração Diária</h1>
+  <div class="data" id="data-hoje"></div>
+  <div class="liturgia-nome" id="liturgia-nome"></div>
+</header>
+
+<nav>
+  <button class="active" onclick="irPara('leituras', this)">Leituras</button>
+  <button onclick="irPara('oracoes', this)">Orações</button>
+</nav>
+
+<div class="page active" id="pg-leituras" style="overflow-y:auto;padding:16px 16px 80px;gap:14px">
+  <div class="loading-msg">Buscando as leituras de hoje…</div>
+</div>
+
+<div class="page" id="pg-oracoes">
+  <div class="sync-bar">
+    <div class="sync-dot ok" id="sync-dot"></div>
+    <span id="sync-msg">Conectado ao Supabase</span>
+  </div>
+  <div id="oracoes-lista"></div>
+</div>
+
+<button class="fab" id="fab" onclick="abrirModal()">+ Nova oração</button>
+
+<div class="overlay" id="overlay" onclick="fecharOverlay(event)">
+  <div class="modal">
+    <h2 id="modal-titulo">Nova oração</h2>
+    <div class="campo">
+      <label>Ícone</label>
+      <div class="emojis">
+        <button class="emoji-op sel" data-e="🙏" onclick="selecionarEmoji(this)">🙏</button>
+        <button class="emoji-op" data-e="✝️" onclick="selecionarEmoji(this)">✝️</button>
+        <button class="emoji-op" data-e="📿" onclick="selecionarEmoji(this)">📿</button>
+        <button class="emoji-op" data-e="🕯️" onclick="selecionarEmoji(this)">🕯️</button>
+        <button class="emoji-op" data-e="💛" onclick="selecionarEmoji(this)">💛</button>
+        <button class="emoji-op" data-e="🌹" onclick="selecionarEmoji(this)">🌹</button>
+        <button class="emoji-op" data-e="🕊️" onclick="selecionarEmoji(this)">🕊️</button>
+        <button class="emoji-op" data-e="⛪" onclick="selecionarEmoji(this)">⛪</button>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Nome</label>
+      <input type="text" id="inp-nome" placeholder="Ex: Oração da manhã">
+    </div>
+    <div class="campo">
+      <label>Texto da oração</label>
+      <textarea id="inp-texto" placeholder="Digite ou cole o texto da oração…"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarOracao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── SUPABASE CONFIG ─────────────────────────────────────────
+  const SUPA_URL = 'https://vndroeathedvfqmkaadi.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuZHJvZWF0aGVkdmZxbWthYWRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDcxMjYsImV4cCI6MjA5NzI4MzEyNn0.D0OFTFT1WdtfXs4d_aqSZwJvI9XuPz_TChRXTzbgM0k';
+
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+
+  async function sbGet() {
+    const r = await fetch(`${SUPA_URL}/rest/v1/oracoes?order=criado_em.asc`, { headers });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+  async function sbInsert(dados) {
+    const r = await fetch(`${SUPA_URL}/rest/v1/oracoes`, { method: 'POST', headers, body: JSON.stringify(dados) });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+  async function sbUpdate(id, dados) {
+    const r = await fetch(`${SUPA_URL}/rest/v1/oracoes?id=eq.${id}`, { method: 'PATCH', headers, body: JSON.stringify(dados) });
+    if (!r.ok) throw new Error(await r.text());
+  }
+  async function sbDelete(id) {
+    const r = await fetch(`${SUPA_URL}/rest/v1/oracoes?id=eq.${id}`, { method: 'DELETE', headers });
+    if (!r.ok) throw new Error(await r.text());
+  }
+
+  // ── UTILS ────────────────────────────────────────────────────
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function setSync(ok, msg) {
+    document.getElementById('sync-dot').className = 'sync-dot ' + (ok ? 'ok' : 'err');
+    document.getElementById('sync-msg').textContent = msg;
+  }
+
+  // ── DATA ─────────────────────────────────────────────────────
+  const hoje = new Date();
+  document.getElementById('data-hoje').textContent =
+    hoje.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+  // ── NAVEGAÇÃO ────────────────────────────────────────────────
+  function irPara(id, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('pg-' + id).classList.add('active');
+    btn.classList.add('active');
+    document.getElementById('fab').classList.toggle('visivel', id === 'oracoes');
+    if (id === 'oracoes') carregarOracoes();
+  }
+
+  // ── LEITURAS ─────────────────────────────────────────────────
+  async function carregarLeituras() {
+    const pg = document.getElementById('pg-leituras');
+    const url = `https://liturgia.up.railway.app/v2/?dia=${hoje.getDate()}&mes=${hoje.getMonth()+1}`;
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error();
+      const json = await r.json();
+      renderLeituras(pg, json);
+    } catch {
+      pg.innerHTML = `
+        <div class="card">
+          <div class="card-body">
+            <p style="color:var(--ink3);font-style:italic;margin-bottom:14px">Não foi possível carregar as leituras. Verifique sua conexão.</p>
+            <div class="link-externo"><a href="https://www.universalis.com.br" target="_blank">Ver leituras no Universalis →</a></div>
+          </div>
+        </div>`;
+    }
+  }
+
+  function corDot(cor) {
+    return {'Verde':'#5a9e6a','Vermelho':'#c0392b','Roxo':'#6c3483','Rosa':'#d98880','Branco':'#aaa'}[cor] || '#aaa';
+  }
+
+  function renderLeituras(pg, json) {
+    pg.innerHTML = '';
+    if (json.liturgia) document.getElementById('liturgia-nome').textContent = json.liturgia;
+    const l = json.leituras || {};
+    const cor = json.cor;
+
+    const evangelhos = l.evangelho || [];
+    if (evangelhos.length) {
+      const ev = evangelhos[0];
+      pg.appendChild(criarCard('Evangelho do dia', ev.referencia, cor,
+        `<div class="evangelho-destaque">${htmlTexto(ev.texto)}</div>`));
+    }
+    (l.primeiraLeitura || []).slice(0,1).forEach(x =>
+      pg.appendChild(criarCard('Primeira leitura', x.referencia, null, htmlTexto(x.texto))));
+    (l.salmo || []).slice(0,1).forEach(x =>
+      pg.appendChild(criarCard('Salmo responsorial', x.referencia, null,
+        (x.refrao ? `<div class="salmo-refrao">Refrão: ${x.refrao}</div>` : '') + htmlTexto(x.texto))));
+    (l.segundaLeitura || []).slice(0,1).forEach(x =>
+      pg.appendChild(criarCard('Segunda leitura', x.referencia, null, htmlTexto(x.texto))));
+
+    const link = document.createElement('div');
+    link.className = 'link-externo';
+    link.innerHTML = `<a href="https://www.universalis.com.br" target="_blank">Ver liturgia completa no Universalis →</a>`;
+    pg.appendChild(link);
+  }
+
+  function criarCard(eyebrow, ref, cor, corpoHtml) {
+    const d = document.createElement('div');
+    d.className = 'card';
+    const corHtml = cor ? `<div class="cor-liturgica"><div class="cor-dot" style="background:${corDot(cor)}"></div><span class="eyebrow">${cor}</span></div>` : '';
+    d.innerHTML = `
+      <div class="card-head">${corHtml}<div class="eyebrow">${eyebrow}</div><div class="leitura-ref">${ref||''}</div></div>
+      <div class="card-body">${corpoHtml}</div>`;
+    return d;
+  }
+
+  function htmlTexto(t = '') {
+    return t.split(/\n+/).filter(Boolean).map(l => `<p>${l.trim()}</p>`).join('');
+  }
+
+  // ── ORAÇÕES ──────────────────────────────────────────────────
+  let oracoes = [];
+
+  async function carregarOracoes() {
+    try {
+      oracoes = await sbGet();
+      setSync(true, `${oracoes.length} oração${oracoes.length !== 1 ? 'ões' : ''} sincronizada${oracoes.length !== 1 ? 's' : ''}`);
+      renderOracoes();
+    } catch(e) {
+      setSync(false, 'Erro ao carregar orações');
+      console.error(e);
+    }
+  }
+
+  function renderOracoes() {
+    const lista = document.getElementById('oracoes-lista');
+    if (!oracoes.length) {
+      lista.innerHTML = `
+        <div class="vazio">
+          <div class="icone">🙏</div>
+          <p>Nenhuma oração cadastrada ainda.<br>Toque em <strong>+ Nova oração</strong> para começar.</p>
+        </div>`;
+      return;
+    }
+    lista.innerHTML = '';
+    oracoes.forEach(o => {
+      const card = document.createElement('div');
+      card.className = 'oracao-card';
+      card.innerHTML = `
+        <div class="oracao-topo" onclick="this.parentElement.classList.toggle('aberta')">
+          <div class="oracao-icone">${o.emoji||'🙏'}</div>
+          <div class="oracao-nome">${o.nome}</div>
+          <span class="chevron">⌄</span>
+        </div>
+        <div class="oracao-corpo">
+          <div class="oracao-texto">${o.texto}</div>
+          <div class="oracao-acoes">
+            <button class="btn-sm" onclick="editarOracao('${o.id}')">✏️ Editar</button>
+            <button class="btn-sm perigo" onclick="excluirOracao('${o.id}')">🗑 Excluir</button>
+          </div>
+        </div>`;
+      lista.appendChild(card);
+    });
+  }
+
+  // ── MODAL ────────────────────────────────────────────────────
+  let emojiSel = '🙏';
+  let editandoId = null;
+
+  function abrirModal(id) {
+    editandoId = id || null;
+    if (id) {
+      const o = oracoes.find(x => x.id === id);
+      document.getElementById('modal-titulo').textContent = 'Editar oração';
+      document.getElementById('inp-nome').value = o.nome;
+      document.getElementById('inp-texto').value = o.texto;
+      setEmoji(o.emoji || '🙏');
+    } else {
+      document.getElementById('modal-titulo').textContent = 'Nova oração';
+      document.getElementById('inp-nome').value = '';
+      document.getElementById('inp-texto').value = '';
+      setEmoji('🙏');
+    }
+    document.getElementById('overlay').classList.add('aberta');
+    setTimeout(() => document.getElementById('inp-nome').focus(), 300);
+  }
+
+  function fecharModal() { document.getElementById('overlay').classList.remove('aberta'); }
+  function fecharOverlay(e) { if (e.target === document.getElementById('overlay')) fecharModal(); }
+
+  function selecionarEmoji(btn) {
+    document.querySelectorAll('.emoji-op').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+    emojiSel = btn.dataset.e;
+  }
+  function setEmoji(val) {
+    emojiSel = val;
+    document.querySelectorAll('.emoji-op').forEach(b => b.classList.toggle('sel', b.dataset.e === val));
+  }
+
+  async function salvarOracao() {
+    const nome  = document.getElementById('inp-nome').value.trim();
+    const texto = document.getElementById('inp-texto').value.trim();
+    if (!nome || !texto) { toast('Preencha o nome e o texto.'); return; }
+    try {
+      if (editandoId) {
+        await sbUpdate(editandoId, { nome, texto, emoji: emojiSel });
+        toast('Oração atualizada ✓');
+      } else {
+        await sbInsert({ nome, texto, emoji: emojiSel });
+        toast('Oração salva para toda a família ✓');
+      }
+      fecharModal();
+      await carregarOracoes();
+    } catch(e) {
+      toast('Erro ao salvar. Verifique a conexão.');
+      console.error(e);
+    }
+  }
+
+  function editarOracao(id) { abrirModal(id); }
+
+  async function excluirOracao(id) {
+    if (!confirm('Excluir esta oração para toda a família?')) return;
+    try {
+      await sbDelete(id);
+      toast('Oração removida');
+      await carregarOracoes();
+    } catch(e) {
+      toast('Erro ao excluir.'); console.error(e);
+    }
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────
+  carregarLeituras();
+  carregarOracoes();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
