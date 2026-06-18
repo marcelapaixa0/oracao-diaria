@@ -1,5 +1,12 @@
-const CACHE = 'oracao-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
+const CACHE = 'oracao-v2';
+const BASE = '/oracao-diaria';
+const ASSETS = [
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/manifest.json',
+  BASE + '/icon-192.png',
+  BASE + '/icon-512.png'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -18,12 +25,11 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Leituras: tenta rede primeiro, sem cache (dados do dia)
-  if (e.request.url.includes('aelf.org')) {
+  if (e.request.url.includes('liturgia.up.railway.app') ||
+      e.request.url.includes('supabase.co')) {
     e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
     return;
   }
-  // Demais assets: cache first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
